@@ -17,7 +17,10 @@ def loadData():
 	limit = 100
 	params = {'token': groupmeToken, 'limit': limit}
 	#data = getGroupmeData(params)
-	musicRecords = appendSpotifyData(spotifyClientIdAndSecret)
+	data = ['https://open.spotify.com/track/6K4t31amVTZDgR3sKmwUJJ?si=aJ9Q0YhoTQ27ojGkwlZ_og', 'tom', 111111]
+	datas = []
+	datas.append(data)
+	musicRecords = appendSpotifyData(spotifyClientIdAndSecret, datas)
 	return musicRecords	
 	#return render_template('messages.html', messages=urls)
 
@@ -51,20 +54,18 @@ def appendSpotifyData(token, groupmeData):
 		dbRecords.append(groupmeAndSpotifyData)
 	return dbRecords
 
-def queryAndAppendSpotifyData(groupmeData, token)
+def queryAndAppendSpotifyData(groupmeData, token):
 	url = groupmeData[0]
 	data = []
 	if('album' in url):
 		data = querySpotifyAlbum(groupmeData, token)
-	else if('artist' in url):
+	elif('artist' in url):
 		data = querySpotifyArtist(groupmeData, token)
-	else if('track' in url):
+	elif('track' in url):
 		data = querySpotifyTrack(groupmeData, token)
-	else:
-		data = Nothing
 	return data
 
-def querySpotifyAlbum(groupmeData, token)
+def querySpotifyAlbum(groupmeData, token):
 	queryUrl = "https://api.spotify.com/v1/albums/" + getSpotifyId(groupmeData[0])
 	authHeader = 'Bearer ' + token
 	req = urllib.request.Request(queryUrl)
@@ -72,17 +73,33 @@ def querySpotifyAlbum(groupmeData, token)
 	with urllib.request.urlopen(req) as f:
 		response = f.read().decode('utf-8')
 		parsed = json.loads(response)
-		
+	return groupmeData
 
-def querySpotifyArtist(groupmeData, token)
+def querySpotifyArtist(groupmeData, token):
+	queryUrl = "https://api.spotify.com/v1/artists/" + getSpotifyId(groupmeData[0])
+	authHeader = 'Bearer ' + token
+	req = urllib.request.Request(queryUrl)
+	req.add_header('Authorization', authHeader)
+	with urllib.request.urlopen(req) as f:
+		response = f.read().decode('utf-8')
+		parsed = json.loads(response)
+	return groupmeData
 
+def querySpotifyTrack(groupmeData, token):
+	queryUrl = "https://api.spotify.com/v1/tracks/" + getSpotifyId(groupmeData[0])
+	authHeader = 'Bearer ' + token
+	req = urllib.request.Request(queryUrl)
+	req.add_header('Authorization', authHeader)
+	with urllib.request.urlopen(req) as f:
+		response = f.read().decode('utf-8')
+		parsed = json.loads(response)
+		print(parsed)
+	return groupmeData
 
-def querySpotifyTrack(groupmeData, token)
-
-def getSpotifyId(url)
+def getSpotifyId(url):
 	return url[(url.rfind('/')+1):]	
 
-def trimForUrl(message)
+def trimForUrl(message):
 	startIndex = message.find('https')
 	if startIndex != 0:
 		endIndex = message.find(' ', startIndex)
