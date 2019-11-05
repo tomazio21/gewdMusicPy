@@ -35,15 +35,61 @@ def getGroupmeData(params):
 			text = mes['text']
 			if isinstance(text, str):
 				if spotifyUrl in text and 'playlist' not in text:
-					messageData = [text, mes['name'], mes['created_at']]
+					url = trimForUrl(text)
+					messageData = [url, mes['name'], mes['created_at']]
 					data.append(messageData)
 		if len(messages) == params['limit']:
 			params['before_id'] = messages[params['limit']-1]['id']
 			data.extend(getGroupmeData(params))
 		return data	
 
-def appendSpotifyData(token):
-	return getSpotifyToken(token)
+def appendSpotifyData(token, groupmeData):
+	dbRecords = []
+	authToken = getSpotifyToken(token)
+	for record in groupmeData:
+		groupmeAndSpotifyData = queryAndAppendSpotifyData(record, authToken)
+		dbRecords.append(groupmeAndSpotifyData)
+	return dbRecords
+
+def queryAndAppendSpotifyData(groupmeData, token)
+	url = groupmeData[0]
+	data = []
+	if('album' in url):
+		data = querySpotifyAlbum(groupmeData, token)
+	else if('artist' in url):
+		data = querySpotifyArtist(groupmeData, token)
+	else if('track' in url):
+		data = querySpotifyTrack(groupmeData, token)
+	else:
+		data = Nothing
+	return data
+
+def querySpotifyAlbum(groupmeData, token)
+	queryUrl = "https://api.spotify.com/v1/albums/" + getSpotifyId(groupmeData[0])
+	authHeader = 'Bearer ' + token
+	req = urllib.request.Request(queryUrl)
+	req.add_header('Authorization', authHeader)
+	with urllib.request.urlopen(req) as f:
+		response = f.read().decode('utf-8')
+		parsed = json.loads(response)
+		
+
+def querySpotifyArtist(groupmeData, token)
+
+
+def querySpotifyTrack(groupmeData, token)
+
+def getSpotifyId(url)
+	return url[(url.rfind('/')+1):]	
+
+def trimForUrl(message)
+	startIndex = message.find('https')
+	if startIndex != 0:
+		endIndex = message.find(' ', startIndex)
+		return message[startIndex:endIndex]
+	else:
+		endIndex = message.find(' ')
+		return message[0:endIndex]
 
 def getSpotifyToken(token):
 	tokenUrl = 'https://accounts.spotify.com/api/token'
@@ -55,8 +101,10 @@ def getSpotifyToken(token):
 	data = urllib.parse.urlencode({'grant_type': 'client_credentials'})
 	data = data.encode('ascii')
 	with urllib.request.urlopen(req, data) as f:
-		print(f.read().decode('utf-8'))
-		return 'we did it'
+		response = f.read().decode('utf-8')
+		parsed = json.loads(response)
+		print(parsed)
+		return parsed['access_token']
 
 def createDB():
 	conn = sqlite3.connect('gewdMusic.db')
