@@ -5,14 +5,19 @@ import base64
 from flask import Flask, render_template
 
 app = Flask(__name__)
-token = 'b5f28cd062ef01372cc0321234d8b0f5'
+groupmeToken = ''
+spotifyClientIdAndSecret = ''
+with open('tokens.json') as f:
+	tokens = json.load(f)
+	groupmeToken = tokens['groupmeToken']	
+	spotifyClientIdAndSecret = tokens['spotifyClientIdAndSecret']
 
 @app.route('/')
 def loadData():
 	limit = 100
-	params = {'token': token, 'limit': limit}
+	params = {'token': groupmeToken, 'limit': limit}
 	#data = getGroupmeData(params)
-	musicRecords = appendSpotifyData([])
+	musicRecords = appendSpotifyData(spotifyClientIdAndSecret)
 	return musicRecords	
 	#return render_template('messages.html', messages=urls)
 
@@ -37,12 +42,12 @@ def getGroupmeData(params):
 			data.extend(getGroupmeData(params))
 		return data	
 
-def appendSpotifyData(data):
-	return getSpotifyToken()
+def appendSpotifyData(token):
+	return getSpotifyToken(token)
 
-def getSpotifyToken():
+def getSpotifyToken(token):
 	tokenUrl = 'https://accounts.spotify.com/api/token'
-	clientIdAndSecret = b'e3ec91da8dbb4f55934246932018cfa2:4cb59eece4664be88b2ebcd516e28771'
+	clientIdAndSecret = bytes(token, encoding='ascii')
 	b64encoded = base64.standard_b64encode(clientIdAndSecret)
 	authHeaderValue = 'Basic ' + b64encoded.decode('ascii')
 	req = urllib.request.Request(tokenUrl)
