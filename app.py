@@ -2,11 +2,13 @@ import urllib.request
 import json
 import sqlite3
 import base64
+import re
 from flask import Flask, render_template
 
 app = Flask(__name__)
 groupmeToken = ''
 spotifyClientIdAndSecret = ''
+ids = set()
 with open('tokens.json') as f:
 	tokens = json.load(f)
 	groupmeToken = tokens['groupmeToken']	
@@ -17,11 +19,12 @@ def loadData():
 	limit = 100
 	params = {'token': groupmeToken, 'limit': limit}
 	#data = getGroupmeData(params)
-	data = ['https://open.spotify.com/track/6K4t31amVTZDgR3sKmwUJJ?si=aJ9Q0YhoTQ27ojGkwlZ_og', 'tom', 111111]
-	datas = []
-	datas.append(data)
-	musicRecords = appendSpotifyData(spotifyClientIdAndSecret, datas)
-	return musicRecords	
+	#musicRecords = appendSpotifyData(spotifyClientIdAndSecret, data)
+	#createDB()
+	#createMusicRecord(musicRecords)
+	records = getMusicRecords()
+	print(records)
+	return 'we did it'
 	#return render_template('messages.html', messages=urls)
 
 
@@ -39,8 +42,11 @@ def getGroupmeData(params):
 			if isinstance(text, str):
 				if spotifyUrl in text and 'playlist' not in text:
 					url = trimForUrl(text)
-					messageData = [url, mes['name'], mes['created_at']]
-					data.append(messageData)
+					musicId = getSpotifyId(url)
+					if musicId not in ids:
+						ids.add(musicId)
+						messageData = [url, mes['name'], mes['created_at']]
+						data.append(messageData)
 		if len(messages) == params['limit']:
 			params['before_id'] = messages[params['limit']-1]['id']
 			data.extend(getGroupmeData(params))
@@ -51,17 +57,18 @@ def appendSpotifyData(token, groupmeData):
 	authToken = getSpotifyToken(token)
 	for record in groupmeData:
 		groupmeAndSpotifyData = queryAndAppendSpotifyData(record, authToken)
-		dbRecords.append(groupmeAndSpotifyData)
+		if len(groupmeAndSpotifyData) != 0:
+			dbRecords.append(groupmeAndSpotifyData)
 	return dbRecords
 
 def queryAndAppendSpotifyData(groupmeData, token):
 	url = groupmeData[0]
-	data = []
-	if('album' in url):
+	data = ()
+	if('/album/' in url):
 		data = querySpotifyAlbum(groupmeData, token)
-	elif('artist' in url):
+	elif('/artist/' in url):
 		data = querySpotifyArtist(groupmeData, token)
-	elif('track' in url):
+	elif('/track/' in url):
 		data = querySpotifyTrack(groupmeData, token)
 	return data
 
@@ -73,7 +80,8 @@ def querySpotifyAlbum(groupmeData, token):
 	with urllib.request.urlopen(req) as f:
 		response = f.read().decode('utf-8')
 		parsed = json.loads(response)
-	return groupmeData
+		groupmeData.extend([parsed['artists'][0]['name'], parsed['name'], ''])
+	return tuple(groupmeData)
 
 def querySpotifyArtist(groupmeData, token):
 	queryUrl = "https://api.spotify.com/v1/artists/" + getSpotifyId(groupmeData[0])
@@ -83,7 +91,8 @@ def querySpotifyArtist(groupmeData, token):
 	with urllib.request.urlopen(req) as f:
 		response = f.read().decode('utf-8')
 		parsed = json.loads(response)
-	return groupmeData
+		groupmeData.extend([parsed['name'], '', ''])
+	return tuple(groupmeData)
 
 def querySpotifyTrack(groupmeData, token):
 	queryUrl = "https://api.spotify.com/v1/tracks/" + getSpotifyId(groupmeData[0])
@@ -93,20 +102,19 @@ def querySpotifyTrack(groupmeData, token):
 	with urllib.request.urlopen(req) as f:
 		response = f.read().decode('utf-8')
 		parsed = json.loads(response)
-		print(parsed)
-	return groupmeData
+		groupmeData.extend([parsed['artists'][0]['name'], parsed['album']['name'], parsed['name']])
+	return tuple(groupmeData)
 
 def getSpotifyId(url):
-	return url[(url.rfind('/')+1):]	
+	startIndex = url.rfind('/') + 1
+	matches = re.findall('\w*', url[startIndex:])
+	id = matches[0]
+	return id
 
 def trimForUrl(message):
 	startIndex = message.find('https')
-	if startIndex != 0:
-		endIndex = message.find(' ', startIndex)
-		return message[startIndex:endIndex]
-	else:
-		endIndex = message.find(' ')
-		return message[0:endIndex]
+	url = message[startIndex:].split()[0]
+	return url
 
 def getSpotifyToken(token):
 	tokenUrl = 'https://accounts.spotify.com/api/token'
@@ -120,18 +128,27 @@ def getSpotifyToken(token):
 	with urllib.request.urlopen(req, data) as f:
 		response = f.read().decode('utf-8')
 		parsed = json.loads(response)
-		print(parsed)
 		return parsed['access_token']
 
 def createDB():
 	conn = sqlite3.connect('gewdMusic.db')
 	c = conn.cursor()
-	c.execute('''CREATE TABLE music (id INTEGER PRIMARY KEY, link TEXT UNIQUE, name TEXT, date_posted INTEGER, artist TEXT, album TEXT, user text)''')
+	c.execute('''CREATE TABLE music (id INTEGER PRIMARY KEY, link TEXT UNIQUE, user text, date_posted INTEGER, artist TEXT, album TEXT, trackname TEXT)''')
 	conn.commit()
 	conn.close()
 
-def createMusicRecord(data):
-	insertStmt = 'INSERT INTO music VALUES (?,?,?,?,?,?)'
+def createMusicRecord(musicRecords):
+	insertStmt = 'INSERT INTO music (link, user, date_posted, artist, album, trackname) VALUES (?,?,?,?,?,?)'
 	conn = sqlite3.connect('gewdMusic.db')
 	c = conn.cursor()
-	c.executemany(insertStmt, data)
+	c.executemany(insertStmt, musicRecords)
+	conn.commit()
+	print('all the records have been inserted')
+	conn.close()
+
+def getMusicRecords():
+	conn = sqlite3.connect('gewdMusic.db')
+	c = conn.cursor()
+	c.execute('SELECT * FROM music')
+	records = c.fetchall()
+	return records
