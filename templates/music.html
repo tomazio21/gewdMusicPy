@@ -1,0 +1,28 @@
+<!doctype html>
+<body>
+	<h1 style="text-align:center">Gewd Mewsik</h1>
+	<table style="margin:auto">
+		<thead>
+			<tr>
+				<th>link</th>
+				<th>user</th>
+				<th>date</th>
+				<th>artist</th>
+				<th>album</th>
+				<th>track</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for record in music %}
+			<tr>
+				<td>{{ record[1] }}</td>
+				<td>{{ record[2] }}</td>
+				<td>{{ record[3] }}</td>
+				<td>{{ record[4] }}</td>
+				<td>{{ record[5] }}</td>
+				<td>{{ record[6] }}</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</body>

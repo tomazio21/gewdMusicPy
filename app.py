@@ -24,8 +24,7 @@ def loadData():
 	#createMusicRecord(musicRecords)
 	records = getMusicRecords()
 	print(records)
-	return 'we did it'
-	#return render_template('messages.html', messages=urls)
+	return render_template('music.html', music=records)
 
 
 def getGroupmeData(params):
