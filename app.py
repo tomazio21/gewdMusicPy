@@ -3,7 +3,7 @@ import json
 import sqlite3
 import base64
 import re
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from datetime import datetime
 
 app = Flask(__name__)
@@ -28,39 +28,52 @@ def loadData():
 	#musicRecords = appendSpotifyData(spotifyClientIdAndSecret, data)
 	#createDB()
 	#createMusicRecord(musicRecords)
-	records = getMusicRecords('')
-	return render_template('music.html', music=records)
+	sort = sanitizeSort(request.args.get('sort'))
+	direction = sanitizeDirection(request.args.get('direction'))
+	records = getMusicRecords(sort, direction)
+	model = buildModel(records)
+	return render_template('music.html', model=model)
 
-@app.route('/no')
-def loadDataByNo():
-	records = getMusicRecords('id')
-	return render_template('music.html', music=records)
+@app.route('/message', methods=['POST'])
+def processMessage():
+	body = request.json
+	print(body)
+	processMessage(body)
+	return 'ingested'
 
-@app.route('/user')
-def loadDataByUser():
-	records = getMusicRecords('user')
-	return render_template('music.html', music=records)
+columns = {
+	'id':'id',
+	'user':'user',
+	'date':'date_posted',
+	'artist':'artist',
+	'album':'album',
+	'track':'trackname'
+}
 
-@app.route('/date')
-def loadDataByDate():
-	records = getMusicRecords('date_posted')
-	return render_template('music.html', music=records)
+def buildModel(records):
+	routes = {}
+	for k, v in columns.items():
+		routes[k] = buildRoute(k)
+	model = {}
+	model['routes'] = routes
+	model['records'] = records
+	return model
 
-@app.route('/artist')
-def loadDataByArtist():
-	records = getMusicRecords('artist')
-	return render_template('music.html', music=records)
+def buildRoute(name):
+	direction = 'asc'
+	if name in request.url and direction in request.url:
+		direction = 'desc'
+	return '/?sort={}&direction={}'.format(name, direction)
 
-@app.route('/album')
-def loadDataByAlbum():
-	records = getMusicRecords('album')
-	return render_template('music.html', music=records)
+def sanitizeSort(sort):
+    return columns.get(sort, 'id')
 
-@app.route('/track')
-def loadDataByTrack():
-	records = getMusicRecords('trackname')
-	return render_template('music.html', music=records)
-
+def sanitizeDirection(direction):
+	if direction == 'desc':
+		return 'DESC'
+	else:
+		return 'ASC'
+	
 def getGroupmeData(params):
 	spotifyUrl = 'https://open.spotify.com/'
 	encodedParams = urllib.parse.urlencode(params)
@@ -84,6 +97,17 @@ def getGroupmeData(params):
 			params['before_id'] = messages[params['limit']-1]['id']
 			data.extend(getGroupmeData(params))
 		return data	
+
+def processMessage(message):	
+	spotifyUrl = 'https://open.spotify.com/'
+	text = message['text']
+	if isinstance(text, str):
+		if spotifyUrl in text and 'playlist' not in text:
+			url = trimForUrl(text)
+			musicId = getSpotifyId(url)
+			messageData = [url, mes['name'], mes['created_at']]
+			musicRecord = appendSpotifyData(spotifyClientIdAndSecret, [messageData])
+			createMusicRecord(musicRecord)
 
 def appendSpotifyData(token, groupmeData):
 	dbRecords = []
@@ -179,13 +203,9 @@ def createMusicRecord(musicRecords):
 	print('all the records have been inserted')
 	conn.close()
 
-def getMusicRecords(column):
+def getMusicRecords(column, direction):
 	conn = sqlite3.connect('gewdMusic.db')
 	c = conn.cursor()
-	print(column)
-	if column:
-		c.execute('SELECT * FROM music ORDER BY {} ASC'.format(column))
-	else:	
-		c.execute('SELECT * FROM music')
+	c.execute('SELECT * FROM music ORDER BY {0} {1}'.format(column, direction))
 	records = c.fetchall()
 	return records

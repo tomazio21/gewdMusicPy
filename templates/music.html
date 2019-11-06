@@ -7,16 +7,16 @@
 	<table style="margin:auto">
 		<thead>
 			<tr>
-				<th>No</th>
-				<th>user</th>
-				<th>date</th>
-				<th>artist</th>
-				<th>album</th>
-				<th>track</th>
+				<th><a href="{{ model.routes['id'] }}">id</a></th>
+				<th><a href="{{ model.routes['user'] }}">user</a></th>
+				<th><a href="{{ model.routes['date'] }}">date</a></th>
+				<th><a href="{{ model.routes['artist'] }}">artist</a></th>
+				<th><a href="{{ model.routes['album'] }}">album</a></th>
+				<th><a href="{{ model.routes['track'] }}">track</a></th>
 			</tr>
 		</thead>
 		<tbody>
-			{% for record in music %}
+			{% for record in model['records'] %}
 			<tr>
 				<td>{{ record[0] }}</td>
 				<td>{{ record[2] }}</td>	
