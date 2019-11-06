@@ -4,15 +4,21 @@ import sqlite3
 import base64
 import re
 from flask import Flask, render_template
+from datetime import datetime
 
 app = Flask(__name__)
 groupmeToken = ''
 spotifyClientIdAndSecret = ''
 ids = set()
+
 with open('tokens.json') as f:
 	tokens = json.load(f)
 	groupmeToken = tokens['groupmeToken']	
 	spotifyClientIdAndSecret = tokens['spotifyClientIdAndSecret']
+
+@app.template_filter('datetimeformat')
+def datetimeformat(value):
+    return datetime.fromtimestamp(value).strftime('%m/%d/%Y')
 
 @app.route('/')
 def loadData():
@@ -22,10 +28,38 @@ def loadData():
 	#musicRecords = appendSpotifyData(spotifyClientIdAndSecret, data)
 	#createDB()
 	#createMusicRecord(musicRecords)
-	records = getMusicRecords()
-	print(records)
+	records = getMusicRecords('')
 	return render_template('music.html', music=records)
 
+@app.route('/no')
+def loadDataByNo():
+	records = getMusicRecords('id')
+	return render_template('music.html', music=records)
+
+@app.route('/user')
+def loadDataByUser():
+	records = getMusicRecords('user')
+	return render_template('music.html', music=records)
+
+@app.route('/date')
+def loadDataByDate():
+	records = getMusicRecords('date_posted')
+	return render_template('music.html', music=records)
+
+@app.route('/artist')
+def loadDataByArtist():
+	records = getMusicRecords('artist')
+	return render_template('music.html', music=records)
+
+@app.route('/album')
+def loadDataByAlbum():
+	records = getMusicRecords('album')
+	return render_template('music.html', music=records)
+
+@app.route('/track')
+def loadDataByTrack():
+	records = getMusicRecords('trackname')
+	return render_template('music.html', music=records)
 
 def getGroupmeData(params):
 	spotifyUrl = 'https://open.spotify.com/'
@@ -145,9 +179,13 @@ def createMusicRecord(musicRecords):
 	print('all the records have been inserted')
 	conn.close()
 
-def getMusicRecords():
+def getMusicRecords(column):
 	conn = sqlite3.connect('gewdMusic.db')
 	c = conn.cursor()
-	c.execute('SELECT * FROM music')
+	print(column)
+	if column:
+		c.execute('SELECT * FROM music ORDER BY {} ASC'.format(column))
+	else:	
+		c.execute('SELECT * FROM music')
 	records = c.fetchall()
 	return records

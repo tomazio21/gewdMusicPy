@@ -1,10 +1,13 @@
+{% macro createLink(name, href) -%}
+	<a href="{{ href }}">{{ name }}</a>
+{%- endmacro %}
 <!doctype html>
 <body>
 	<h1 style="text-align:center">Gewd Mewsik</h1>
 	<table style="margin:auto">
 		<thead>
 			<tr>
-				<th>link</th>
+				<th>No</th>
 				<th>user</th>
 				<th>date</th>
 				<th>artist</th>
@@ -15,12 +18,24 @@
 		<tbody>
 			{% for record in music %}
 			<tr>
-				<td>{{ record[1] }}</td>
-				<td>{{ record[2] }}</td>
-				<td>{{ record[3] }}</td>
-				<td>{{ record[4] }}</td>
-				<td>{{ record[5] }}</td>
-				<td>{{ record[6] }}</td>
+				<td>{{ record[0] }}</td>
+				<td>{{ record[2] }}</td>	
+				<td>{{ record[3]|datetimeformat }}</td>
+				{% if not record[5] and not record[6] %}
+					<td>{{ createLink(record[4], record[1]) }}</td>
+				{% else %}
+					<td>{{ record[4] }}</td>
+				{% endif %}
+				{% if record[5] and not record[6] %}
+					<td>{{ createLink(record[5], record[1]) }}</td>
+				{% else %}
+					<td>{{ record[5] }}</td>
+				{% endif %}
+				{% if record[6] %}
+					<td>{{ createLink(record[6], record[1]) }}</td>
+				{% else %}
+					<td>{{ record[6] }}</td>
+				{% endif %}
 			</tr>
 			{% endfor %}
 		</tbody>
