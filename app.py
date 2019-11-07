@@ -22,9 +22,10 @@ def datetimeformat(value):
 
 @app.route('/')
 def loadData():
-	limit = 100
-	params = {'token': groupmeToken, 'limit': limit}
+	#limit = 100
+	#params = {'token': groupmeToken, 'limit': limit}
 	#data = getGroupmeData(params)
+	#data.reverse()
 	#musicRecords = appendSpotifyData(spotifyClientIdAndSecret, data)
 	#createDB()
 	#createMusicRecord(musicRecords)
@@ -34,12 +35,11 @@ def loadData():
 	model = buildModel(records)
 	return render_template('music.html', model=model)
 
-@app.route('/message', methods=['POST'])
+@app.route('/message', methods=['GET'])
 def processMessage():
-	body = request.json
-	print(body)
+	body = request.get_json()
 	processMessage(body)
-	return 'ingested'
+	return 'ok', 200
 
 columns = {
 	'id':'id',
@@ -105,7 +105,7 @@ def processMessage(message):
 		if spotifyUrl in text and 'playlist' not in text:
 			url = trimForUrl(text)
 			musicId = getSpotifyId(url)
-			messageData = [url, mes['name'], mes['created_at']]
+			messageData = [url, message['name'], message['created_at']]
 			musicRecord = appendSpotifyData(spotifyClientIdAndSecret, [messageData])
 			createMusicRecord(musicRecord)
 
