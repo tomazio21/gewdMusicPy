@@ -9,12 +9,14 @@ from datetime import datetime
 app = Flask(__name__)
 groupmeToken = ''
 spotifyClientIdAndSecret = ''
+cientId = ''
 ids = set()
 
 with open('tokens.json') as f:
 	tokens = json.load(f)
 	groupmeToken = tokens['groupmeToken']
 	spotifyClientIdAndSecret = tokens['spotifyClientIdAndSecret']
+	clientId = tokens['clientId']
 
 @app.template_filter('datetimeformat')
 def datetimeformat(value):
@@ -40,6 +42,16 @@ def processMessage():
 	body = request.get_json()
 	processMessage(body)
 	return 'ok', 200
+
+@app.route('/playlist', methods=['GET'])
+def playlist():
+	resp = getSpotifyUserAccessToken(clientId)
+	#createPlaylist()
+	return 'ok'
+@app.route('/callback')
+def callback():
+	print(request.url)
+	return 'ok'
 
 columns = {
 	'id':'id',
@@ -162,6 +174,49 @@ def querySpotifyTrack(groupmeData, token):
 		groupmeData.extend([parsed['artists'][0]['name'], parsed['album']['name'], parsed['name']])
 	return tuple(groupmeData)
 
+def querySpotifyTracksFromAlbum(albumId):
+	ids= []
+	queryUrl = 'https://api.spotify.com/v1/albums/{}/tracks'.format(albumId)
+	token = getSpotifyToken(spotifyClientIdAndSecret)
+	authHeader = 'Bearer ' + token
+	req = urllib.request.Request(queryUrl)
+	req.add_header('Authorization', authHeader)
+	with urllib.request.urlopen(req) as f:
+		response = f.read().decode('utf-8')
+		parsed = json.loads(response)
+		tracks = parsed['items']
+		for track in tracks:
+			ids.append(track['id'])
+	return ids
+
+def buildSpotifyTrackIds():
+	ids = []
+	urls = getMusicLinks()
+	for url in urls:
+		if('/album/' in url[0]):
+			trackIds = querySpotifyTracksFromAlbum(getSpotifyId(url[0]))
+			for trackId in trackIds:
+				ids.append(trackId)	
+		elif('/track/' in url[0]):
+			ids.append(getSpotifyId(url[0]))
+	return ids
+
+def createPlaylist():
+	#trackids = buildSpotifyTrackIds()
+	getSpotifyUserAccessToken(clientId)
+	queryUrl = 'https://api.spotify.com/v1/users/tomazio21/playlists'
+	token = getSpotifyToken(spotifyClientIdAndSecret)
+	authHeader = 'Bearer ' + token
+	req = urllib.request.Request(queryUrl)
+	req.add_header('Authorization', authHeader)
+	req.add_header('Content-Type', 'application/json')
+	data = urllib.parse.urlencode({'name': 'test', 'description': 'the gewd shit'})
+	data = data.encode('ascii')
+	with urllib.request.urlopen(req, data) as f:
+		response = f.read().decode('utf-8')
+		parsed = json.loads(response)
+		print(parsed['id'])
+
 def getSpotifyId(url):
 	startIndex = url.rfind('/') + 1
 	matches = re.findall('\w*', url[startIndex:])
@@ -187,6 +242,13 @@ def getSpotifyToken(token):
 		parsed = json.loads(response)
 		return parsed['access_token']
 
+def getSpotifyUserAccessToken(clientId):
+	data = urllib.parse.urlencode({'client_id': clientId, 'response_type': 'code', 'redirect_uri': 'http://127.0.0.1/callback/', 'scope': 'playlist-modify-public' })
+	tokenUrl = 'https://accounts.spotify.com/authorize?'+data
+	with urllib.request.urlopen(tokenUrl) as f:
+		response = f.read().decode('utf-8')
+		print(response)
+
 def createDB():
 	conn = sqlite3.connect('gewdMusic.db')
 	c = conn.cursor()
@@ -207,5 +269,12 @@ def getMusicRecords(column, direction):
 	conn = sqlite3.connect('gewdMusic.db')
 	c = conn.cursor()
 	c.execute('SELECT * FROM music ORDER BY {0} {1}'.format(column, direction))
+	records = c.fetchall()
+	return records
+
+def getMusicLinks():
+	conn = sqlite3.connect('gewdMusic.db')
+	c = conn.cursor()
+	c.execute('SELECT link FROM music')
 	records = c.fetchall()
 	return records
