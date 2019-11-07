@@ -13,7 +13,7 @@ ids = set()
 
 with open('tokens.json') as f:
 	tokens = json.load(f)
-	groupmeToken = tokens['groupmeToken']	
+	groupmeToken = tokens['groupmeToken']
 	spotifyClientIdAndSecret = tokens['spotifyClientIdAndSecret']
 
 @app.template_filter('datetimeformat')
@@ -69,10 +69,10 @@ def sanitizeSort(sort):
     return columns.get(sort, 'id')
 
 def sanitizeDirection(direction):
-	if direction == 'desc':
-		return 'DESC'
-	else:
+	if direction == 'asc':
 		return 'ASC'
+	else:
+		return 'DESC'
 	
 def getGroupmeData(params):
 	spotifyUrl = 'https://open.spotify.com/'
