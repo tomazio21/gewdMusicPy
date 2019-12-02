@@ -48,7 +48,7 @@ def playlist():
 	resp = getSpotifyUserAccessToken(clientId)
 	#createPlaylist()
 	return 'ok'
-@app.route('/callback')
+@app.route('/callback/')
 def callback():
 	print(request.url)
 	return 'ok'
@@ -243,8 +243,9 @@ def getSpotifyToken(token):
 		return parsed['access_token']
 
 def getSpotifyUserAccessToken(clientId):
-	data = urllib.parse.urlencode({'client_id': clientId, 'response_type': 'code', 'redirect_uri': 'http://127.0.0.1/callback/', 'scope': 'playlist-modify-public' })
+	data = urllib.parse.urlencode({'client_id': clientId, 'response_type': 'code', 'redirect_uri': 'http://127.0.0.1:5000/callback/', 'scope': 'playlist-modify-public' })
 	tokenUrl = 'https://accounts.spotify.com/authorize?'+data
+	print(tokenUrl)
 	with urllib.request.urlopen(tokenUrl) as f:
 		response = f.read().decode('utf-8')
 		print(response)
