@@ -5,6 +5,7 @@ import base64
 import re
 from flask import Flask, render_template, request
 from datetime import datetime
+from urllib import parse
 
 app = Flask(__name__)
 groupmeToken = ''
@@ -48,10 +49,49 @@ def playlist():
 	resp = getSpotifyUserAccessToken(clientId)
 	#createPlaylist()
 	return 'ok'
+
 @app.route('/callback/')
 def callback():
-	print(request.url)
+	code = parse.parse_qs(parse.urlparse(request.url).query)['code'][0]
+	tokenUrl = 'https://accounts.spotify.com/api/token'
+	clientIdAndSecret = bytes(spotifyClientIdAndSecret, encoding='ascii')
+	b64encoded = base64.standard_b64encode(clientIdAndSecret)
+	authHeaderValue = 'Basic ' + b64encoded.decode('ascii')
+	req = urllib.request.Request(tokenUrl)
+	req.add_header('Authorization', authHeaderValue)	
+	data = urllib.parse.urlencode({'grant_type': 'authorization_code', 'code': code, 'redirect_uri': 'http://127.0.0.1:5000/callback/' })
+	data = data.encode('ascii')
+	with urllib.request.urlopen(req, data) as f:
+		response = f.read().decode('utf-8')
+		parsed = json.loads(response)
+		accessToken = parsed['access_token']
+		print(parsed)
+		#res = createSpotifyPlaylist(accessToken)
+		#return res
 	return 'ok'
+
+@app.route('/addTracks')
+def addTracks():
+	ids = buildSpotifyTrackIds()
+	uris = []
+	for track in ids:
+		uri = 'spotify:track:'+track
+		uris.append(uri)
+	print(uris)
+	for i in range(0, len(uris), 100):
+		subset = uris[i:i+100]
+		queryUrl = 'https://api.spotify.com/v1/playlists/2QuHSYqMfPAUWYJVCgVtRM/tracks'
+		authHeader = 'Bearer ' + 'BQCXuazS_2KKUgNgsGryblA947xJyIYqM5NBljAknbda7YFrYNuPlG1o6aud0viB3ubxx73LGqZu3R6AlYV4xMdraKp8eghQSgv8-CxbEBUe17F00Q2wIs-JCcjDB2dvys5OSvQvkToeEID4G-nreD1m71EyWitTpoZphIeeIJUMuWrv'
+		req = urllib.request.Request(queryUrl)
+		req.add_header('Authorization', authHeader)
+		req.add_header('Content-Type', 'application/json')
+		data = json.dumps({'uris': subset})
+		data = data.encode('ascii')
+		with urllib.request.urlopen(req, data) as f:
+			response = f.read().decode('utf-8')
+			parsed = json.loads(response)
+			print(parsed)
+	return 'tracks were all added successfully'
 
 columns = {
 	'id':'id',
@@ -174,6 +214,20 @@ def querySpotifyTrack(groupmeData, token):
 		groupmeData.extend([parsed['artists'][0]['name'], parsed['album']['name'], parsed['name']])
 	return tuple(groupmeData)
 
+def createSpotifyPlaylist(token):
+	print(token)
+	queryUrl = 'https://api.spotify.com/v1/users/tomazio21/playlists'
+	authHeader = 'Bearer ' + token
+	req = urllib.request.Request(queryUrl)
+	req.add_header('Authorization', authHeader)
+	req.add_header('Content-Type', 'application/json')
+	data = json.dumps({'name': 'Gewd Music'})
+	data = data.encode('ascii')
+	with urllib.request.urlopen(req, data) as f:
+		response = f.read().decode('utf-8')
+		parsed = json.loads(response)
+		return 'the playlist was created successfully'
+
 def querySpotifyTracksFromAlbum(albumId):
 	ids= []
 	queryUrl = 'https://api.spotify.com/v1/albums/{}/tracks'.format(albumId)
@@ -200,22 +254,6 @@ def buildSpotifyTrackIds():
 		elif('/track/' in url[0]):
 			ids.append(getSpotifyId(url[0]))
 	return ids
-
-def createPlaylist():
-	#trackids = buildSpotifyTrackIds()
-	getSpotifyUserAccessToken(clientId)
-	queryUrl = 'https://api.spotify.com/v1/users/tomazio21/playlists'
-	token = getSpotifyToken(spotifyClientIdAndSecret)
-	authHeader = 'Bearer ' + token
-	req = urllib.request.Request(queryUrl)
-	req.add_header('Authorization', authHeader)
-	req.add_header('Content-Type', 'application/json')
-	data = urllib.parse.urlencode({'name': 'test', 'description': 'the gewd shit'})
-	data = data.encode('ascii')
-	with urllib.request.urlopen(req, data) as f:
-		response = f.read().decode('utf-8')
-		parsed = json.loads(response)
-		print(parsed['id'])
 
 def getSpotifyId(url):
 	startIndex = url.rfind('/') + 1
@@ -246,9 +284,9 @@ def getSpotifyUserAccessToken(clientId):
 	data = urllib.parse.urlencode({'client_id': clientId, 'response_type': 'code', 'redirect_uri': 'http://127.0.0.1:5000/callback/', 'scope': 'playlist-modify-public' })
 	tokenUrl = 'https://accounts.spotify.com/authorize?'+data
 	print(tokenUrl)
-	with urllib.request.urlopen(tokenUrl) as f:
-		response = f.read().decode('utf-8')
-		print(response)
+	#with urllib.request.urlopen(tokenUrl) as f:
+	#	response = f.read().decode('utf-8')
+	#	print(response)
 
 def createDB():
 	conn = sqlite3.connect('gewdMusic.db')
