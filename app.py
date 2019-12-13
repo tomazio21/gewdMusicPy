@@ -16,7 +16,6 @@ app = Flask(__name__)
 groupmeToken = ''
 cientId = ''
 spotifyAuthHeaderValue = ''
-spotifyAuthorizationCodeFlowToken = ''
 
 urls = {
     'spotify':'https://open.spotify.com/',
