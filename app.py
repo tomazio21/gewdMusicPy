@@ -193,8 +193,8 @@ def getGroupmeData(params, ids):
     messages = parsed['response']['messages']
     data = []
     for message in messages:
-        if isValidSpotifyLink(message):
-            url = trimForUrl(message['text'])
+        url = getValidSpotifyUrl(message)
+        if url:
             musicId = getSpotifyId(url)
             if musicId not in ids:
                 ids.add(musicId)
@@ -220,20 +220,21 @@ def trimForUrl(message):
     url = message[startIndex:].split()[0]
     return url
 
-def isValidSpotifyLink(message):
+def getValidSpotifyUrl(message):
     text = message['text']
     if isinstance(text, str) and urls['spotify'] in text:
         url = trimForUrl(text)
         if 'album' in url or 'track' in url or 'artist' in url:
-            return True
-    return False
+            return url
+    return ''
 
 #
 # process individual groupme message for spotify link
 #
 
-def processMessage(message):	
-    if isValidSpotifyLink(message): 
+def processMessage(message):
+    url = getValidSpotifyUrl(message)
+    if url:
         url = trimForUrl(message['text'])
         musicId = getSpotifyId(url)
         messageData = [url, message['name'], message['created_at']]
