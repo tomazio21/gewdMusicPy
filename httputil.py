@@ -15,7 +15,6 @@ def get(url, params, headers=None):
 def post(url, params, headers=None, json=False):
     req = urllib.request.Request(url)
     data = ''
-    print(json)
     if json == False:
         params = urllib.parse.urlencode(params)
     if headers != None:

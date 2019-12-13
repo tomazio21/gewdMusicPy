@@ -105,36 +105,32 @@ def callback():
     response = httputil.post(urls['spotifyToken'], params, headers) 
     parsed = json.loads(response)
     accessToken = parsed['access_token']
-    spotifyAuthorizationCodeFlowToken = accessToken
-    print(parsed)
+    print(accessToken)
     return accessToken
 
 @app.route('/playlist')
 def createPlaylist():
-    playlistId = createSpotifyPlaylist('test', 'tomazio21')
-    return playlistId
+    playlistId = createSpotifyPlaylist('test4', 'tomazio21')
     uris = buildSpotifyTrackUris()
     for i in range(0, len(uris), 100):
         subset = uris[i:i+100]
-        #gewd Music playlistId url
         queryUrl = urls['spotifyApi'] + 'playlists/{}/tracks'.format(playlistId)
-        authHeader = 'Bearer ' + spotifyAuthorizationCodeFlowToken
+        authHeader = 'Bearer ' + 'BQDpbaXyvTQ61PN2HxYAJ2MJgZIhPmhnyOBxULbugLzTq4DMNagdE2nQ6AuOUSVTsq8DiNAuXPqE6kF0zONyIDbdBoxzizssGA0ifnLHYTPsOhCa3oFECEWDd6ENbjXpUCnSruF46wwR5lxmpRiG5GPhFF8f7FG24ybAluxA3poV3LXC'
         headers = {'Authorization': authHeader, 'Content-Type': 'application/json'}
         params = json.dumps({'uris': subset})
         response = httputil.post(queryUrl, params, headers, True)
         parsed = json.loads(response)
-        print(parsed)
     return 'tracks were all added successfully'
 
 def createSpotifyPlaylist(name, userId):
     queryUrl = urls['spotifyApi'] + 'users/{}/playlists'.format(userId)
-    authHeader = 'Bearer ' + spotifyAuthorizationCodeFlowToken
+    authHeader = 'Bearer ' + 'BQDpbaXyvTQ61PN2HxYAJ2MJgZIhPmhnyOBxULbugLzTq4DMNagdE2nQ6AuOUSVTsq8DiNAuXPqE6kF0zONyIDbdBoxzizssGA0ifnLHYTPsOhCa3oFECEWDd6ENbjXpUCnSruF46wwR5lxmpRiG5GPhFF8f7FG24ybAluxA3poV3LXC'
     headers = {'Authorization': authHeader, 'Content-Type': 'application/json'}
     params = json.dumps({'name': name})
-    response = httputil.post(queryUrl, params, headers)
+    response = httputil.post(queryUrl, params, headers, True)
     parsed = json.loads(response)
-    print(parsed)
-    return 'the playlist was created successfully for {}'.format(userId)
+    playlistId = parsed['id']
+    return playlistId
 
 def buildSpotifyTrackUris():
     uris = []
@@ -308,9 +304,9 @@ def querySpotifyTrack(groupmeData, token):
 def querySpotifyTracksFromAlbum(albumId):
     ids= []
     queryUrl =  urls['spotifyApi'] +  'albums/{}/tracks'.format(albumId)
-    token = getSpotifyClientCredToken(spotifyHeaderValue)
+    token = getSpotifyClientCredToken()
     authHeader = 'Bearer ' + token
-    headers = {'Authorization', authHeader}
+    headers = {'Authorization': authHeader}
     response = httputil.get(queryUrl, {}, headers)
     parsed = json.loads(response)
     tracks = parsed['items']
