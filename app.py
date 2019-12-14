@@ -39,11 +39,6 @@ with open('tokens.json') as f:
 def datetimeformat(value):
     return datetime.fromtimestamp(value).strftime('%m/%d/%Y')
 
-@app.route('/token')
-def token():
-    return getSpotifyClientCredToken()
-
-
 #
 # site routes
 #
