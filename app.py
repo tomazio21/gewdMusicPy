@@ -79,7 +79,7 @@ def generateDb():
 @app.route('/spotifyAuth', methods=['GET'])
 def spotifyAuth():
     url = spotifyClient.getSpotifyUserAuthTokenUrl()
-    message = 'Click the following url to initaite the authorization code flow token retrieval: \n'
+    message = 'Click the following url to initaite the authorization code flow token retrieval: <br>'
     anchor = '<a href="{}">{}</a>'.format(url, url)
     message += anchor
     return message
