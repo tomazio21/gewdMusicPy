@@ -22,6 +22,15 @@ urls = {
     'groupmeUrl': 'https://api.groupme.com/v3/groups/27335510/messages?',
 }
 
+columns = {
+    'id':'id',
+    'user':'user',
+    'date':'date_posted',
+    'artist':'artist',
+    'album':'album',
+    'track':'trackname'
+}
+
 with open('tokens.json') as f:
     tokens = json.load(f)
     groupmeToken = tokens['groupmeToken']
@@ -118,15 +127,6 @@ def buildSpotifyTrackUris():
 #
 # home page helpers
 #
-
-columns = {
-    'id':'id',
-    'user':'user',
-    'date':'date_posted',
-    'artist':'artist',
-    'album':'album',
-    'track':'trackname'
-}
 
 def buildModel(records):
     routes = {}
