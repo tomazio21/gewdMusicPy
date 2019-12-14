@@ -26,7 +26,6 @@ with open('tokens.json') as f:
     tokens = json.load(f)
     groupmeToken = tokens['groupmeToken']
     spotifyClientIdAndSecret = tokens['spotifyClientIdAndSecret']
-    clientId = tokens['clientId']
     spotifyClient = spotifyclient.SpotifyClient(spotifyClientIdAndSecret)
 
 @app.template_filter('datetimeformat')
