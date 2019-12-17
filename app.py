@@ -3,6 +3,7 @@ import json
 import db
 import httputil
 import spotifyclient
+import os
 from urllib import parse
 from datetime import datetime
 from flask import Flask, render_template, request
@@ -13,8 +14,6 @@ from flask import Flask, render_template, request
 
 app = Flask(__name__)
 groupmeToken = ''
-cientId = ''
-spotifyAuthHeaderValue = ''
 spotifyClient = None
 
 urls = {
@@ -67,6 +66,7 @@ def processMessage():
 
 @app.route('/db', methods=['GET'])
 def generateDb():
+    removeDbIfExists()
     limit = 100
     params = {'token': groupmeToken, 'limit': limit}
     spotifyIds = set()
@@ -130,7 +130,7 @@ def buildSpotifyTrackUris():
 
 def buildModel(records):
     routes = {}
-    for k, v in columns.items():
+    for k in columns.keys():
         routes[k] = buildRoute(k)
     model = {}
     model['routes'] = routes
@@ -212,7 +212,7 @@ def appendSpotifyData(groupmeData):
     dbRecords = []
     for record in groupmeData:
         groupmeAndSpotifyData = queryAndAppendSpotifyData(record)
-        if len(groupmeAndSpotifyData) != 0:
+        if groupmeAndSpotifyData:
             dbRecords.append(groupmeAndSpotifyData)
     return dbRecords
 
@@ -232,3 +232,8 @@ def queryAndAppendSpotifyData(groupmeData):
     
     data = tuple(groupmeData)
     return data
+
+def removeDbIfExists():
+    dbFile = 'gewdMusic.db'
+    if os.path.isfile(dbFile):
+        os.remove(dbFile)
